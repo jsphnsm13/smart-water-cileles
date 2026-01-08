@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Kualitas Air – Cileles</title>
+
+    <!-- CSS utama -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Leaflet -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+        #map {
+            height: 80vh;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .map-container {
+            padding: 30px;
+        }
+
+        .legend {
+            background: white;
+            padding: 14px 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .legend span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="hero">
+    <h1>🗺️ Peta Kualitas Air</h1>
+    <p class="subtitle">
+        Visualisasi sebaran kualitas air warga Cileles, Jatinangor
+    </p>
+</header>
+
+<section class="map-container">
+    <div id="map"></div>
+</section>
+
+<section class="action">
+    <h3>ℹ️ Cara Membaca Peta</h3>
+    <p>
+        Titik lokasi menunjukkan rumah warga yang dilakukan pengukuran kualitas air.
+        Warna marker menggambarkan kondisi kualitas air berdasarkan parameter
+        pH, EC, dan TDS.
+    </p>
+
+    <a href="/" class="btn">⬅️ Kembali ke Dashboard</a>
+</section>
+
+<footer>
+    <p>
+        Smart Water Watch © 2026 <br>
+        Project Clean Water – Cileles, Jatinangor
+    </p>
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // =========================
+    // INIT MAP (CILELES)
+    // =========================
+    var map = L.map('map').setView([-6.93, 107.77], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // =========================
+    // ICON WARNA BERDASARKAN STATUS
+    // =========================
+    function markerColor(status) {
+        if (status === "AMAN") return "green";
+        if (status === "ASAM") return "red";
+        return "orange";
+    }
+
+    // =========================
+    // DATA DARI FLASK
+    // =========================
+    var lokasi = [
+        {% for l in lokasi %}
+        {
+            nama: "{{ l.rumah }}",
+            lat: {{ l.lat }},
+            lon: {{ l.lon }},
+            status: "{{ l.status }}"
+        },
+        {% endfor %}
+    ];
+
+    // =========================
+    // ADD MARKERS
+    // =========================
+    lokasi.forEach(function(d) {
+        var color = markerColor(d.status);
+
+        var marker = L.circleMarker([d.lat, d.lon], {
+            radius: 10,
+            fillColor: color,
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).addTo(map);
+
+        marker.bindPopup(`
+            <b>${d.nama}</b><br>
+            Status Air: <b>${d.status}</b><br><br>
+            <i>Pengukuran pH, EC, dan TDS</i>
+        `);
+    });
+
+    // =========================
+    // LEGEND
+    // =========================
+    var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function () {
+        var div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `
+            <b>Status Kualitas Air</b><br>
+            <span style="background:green"></span> Aman<br>
+            <span style="background:orange"></span> Waspada<br>
+            <span style="background:red"></span> Asam
+        `;
+        return div;
+    };
+    legend.addTo(map);
+</script>
+
+</body>
+</html>

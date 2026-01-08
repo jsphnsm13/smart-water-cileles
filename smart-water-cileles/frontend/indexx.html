@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Water Watch</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylee.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+<header class="hero">
+    <h1>💧 Smart Water Watch</h1>
+    <p>Monitoring & Analisis Kualitas Air Tanah Wilayah Cileles</p>
+</header>
+
+<!-- ================= SUMMARY ================= -->
+<section class="summary">
+    <div class="card">
+        <h3>📌 Tentang Sistem</h3>
+        <p>
+            Sistem ini menyajikan hasil pengukuran kualitas air tanah
+            berbasis pH, EC, dan TDS, serta dilengkapi dengan AI
+            untuk membantu interpretasi data secara mudah dan aplikatif.
+        </p>
+    </div>
+
+    <div class="card highlight">
+        <h3>⚠️ Catatan Umum</h3>
+        <p>
+            Beberapa titik menunjukkan kondisi air <b>asam</b>.
+            Air masih dapat digunakan dengan <b>pengolahan sederhana</b>.
+        </p>
+    </div>
+</section>
+
+<!-- ================= TABLE ================= -->
+<section class="table-section">
+    <h2>📊 Data Kualitas Air Warga</h2>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rumah</th>
+                    <th>pH</th>
+                    <th>EC</th>
+                    <th>TDS</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for d in data %}
+                <tr>
+                    <td>{{ d.rumah }}</td>
+                    <td>{{ d.pH }}</td>
+                    <td>{{ d.EC }}</td>
+                    <td>{{ d.TDS }}</td>
+                    <td>
+                        <span class="badge {{ d.warna }}">{{ d.status }}</span>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<canvas id="chartPH"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const dataPH = {{ data | tojson }};
+new Chart(document.getElementById('chartPH'), {
+    type: 'bar',
+    data: {
+        labels: dataPH.map(d => d.rumah),
+        datasets: [{
+            label: 'pH',
+            data: dataPH.map(d => d.pH)
+        }]
+    }
+});
+</script>
+
+<!-- ================= AI CHAT ================= -->
+<section class="ai-section">
+    <h2>🤖 Smart Water AI</h2>
+    <p class="ai-desc">
+        Tanyakan apa pun terkait kualitas air di wilayah Cileles.
+        AI akan menjawab berdasarkan data pengukuran lapangan.
+    </p>
+
+    <div class="chat-box" id="chat-box"></div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput"
+               placeholder="Contoh: Bagaimana kondisi air tanah di Cileles?">
+        <button onclick="sendChat()">Kirim</button>
+    </div>
+</section>
+
+<!-- ================= ACTION ================= -->
+<section class="action">
+    <a href="/peta" class="btn">🗺️ Lihat Peta Lokasi Air</a>
+</section>
+
+<footer>
+    <p>Smart Water Watch © 2026 | Project Clean Water Cileles</p>
+</footer>
+
+<script>
+function sendChat() {
+    const input = document.getElementById("userInput");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const box = document.getElementById("chat-box");
+
+    box.innerHTML += `
+        <div class="chat user">
+            <span>🧑</span>
+            <p>${msg}</p>
+        </div>
+    `;
+
+    input.value = "";
+    box.scrollTop = box.scrollHeight;
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: msg})
+    })
+    .then(res => res.json())
+    .then(data => {
+        box.innerHTML += `
+            <div class="chat ai">
+                <span>🤖</span>
+                <p>${data.reply}</p>
+            </div>
+        `;
+        box.scrollTop = box.scrollHeight;
+    })
+    .catch(() => {
+        box.innerHTML += `
+            <div class="chat ai">
+                <span>🤖</span>
+                <p>⚠️ AI sedang tidak tersedia.</p>
+            </div>
+        `;
+    });
+}
+</script>
+
+</body>
+</html>
