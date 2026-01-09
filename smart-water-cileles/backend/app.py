@@ -6,17 +6,15 @@ import requests
 app = Flask(__name__)
 
 # =========================
-# KONFIGURASI AI (GEMINI)
+# KONFIGURASI OPENAI
 # =========================
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not GEMINI_API_KEY:
-    raise RuntimeError("❌ GEMINI_API_KEY belum diset di environment")
+if not OPENAI_API_KEY:
+    raise RuntimeError("❌ OPENAI_API_KEY belum diset di environment")
 
-GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-pro:generateContent?key=" + GEMINI_API_KEY
-)
+OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = "gpt-3.5-turbo"
 
 # =========================
 # STANDAR KUALITAS AIR
@@ -77,7 +75,7 @@ def index():
     return render_template("indexx.html", data=hasil)
 
 # =========================
-# 🤖 AI CHAT (GEMINI)
+# 🤖 AI CHAT (OPENAI)
 # =========================
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -88,34 +86,51 @@ def chat():
     df = load_data()
     summary = df[["Rumah", "pH", "EC", "TDS"]].to_string(index=False)
 
-    prompt = f"""
-Kamu adalah AI ahli kualitas air tanah.
-
-Data kualitas air Cileles:
+    messages = [
+        {
+            "role": "system",
+            "content": "Kamu adalah AI ahli kualitas air tanah."
+        },
+        {
+            "role": "user",
+            "content": f"""
+Data kualitas air wilayah Cileles:
 {summary}
 
 Pertanyaan warga:
 {user_msg}
 
-Jawab singkat, jelas, dan mudah dipahami masyarakat.
+Jawab dengan bahasa sederhana dan mudah dipahami.
 """
+        }
+    ]
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
     payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
+        "model": OPENAI_MODEL,
+        "messages": messages,
+        "temperature": 0.3
     }
 
     try:
-        response = requests.post(GEMINI_URL, json=payload, timeout=30)
-        response.raise_for_status()
+        res = requests.post(
+            OPENAI_URL,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        res.raise_for_status()
 
-        data = response.json()
-        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+        data = res.json()
+        reply = data["choices"][0]["message"]["content"]
 
         return jsonify({"reply": reply})
 
-    except Exception as e:
+    except Exception:
         return jsonify({
             "reply": "⚠️ AI sedang tidak tersedia. Coba lagi nanti."
         })
