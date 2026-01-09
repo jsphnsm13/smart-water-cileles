@@ -13,7 +13,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("❌ OPENAI_API_KEY belum diset di environment")
 
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_URL = "https://litellm.koboi2026.biz.id/v1"
 OPENAI_MODEL = "gpt-3.5-turbo"
 
 # =========================
@@ -159,3 +159,4 @@ def peta():
 # =========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
